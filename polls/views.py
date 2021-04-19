@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.template import loader
 from django.utils import timezone
 
-from .models import Choice, Question
+from .models import Choice, Question, User
 from django.views import generic
 
 # Create your views here.
@@ -49,6 +49,26 @@ def vote(request, question_id):
         selected_choice.votes += 1
         selected_choice.save()
     return HttpResponseRedirect(reverse('results', args=(question_id,)))  # polls:results
+
+
+# User
+def register(request):
+    #  user = get_object_or_404(User, pk=user_id)
+
+    try:
+        """username_input = User.objects.choice_set.get(pk=request.GET['username'])
+        password_input = User.objects.choice_set.get(pk=request.POST['password'])
+        user_email_input = User.objects.choice_set.get(pk=request.POST['user_email'])"""
+        username_input = request.POST['username']
+        password_input = request.POST['password']
+        user_email_input = request.POST['user_email']
+        user = User(username=username_input, password=password_input, user_email=user_email_input)
+        user.save()
+    except (KeyError, User.DoesNotExist):
+        return render(request, 'polls/register.html', {
+            'error_message': "You didn't enter values"
+        })
+    return HttpResponse("/")
 
 
 """def index(request):
