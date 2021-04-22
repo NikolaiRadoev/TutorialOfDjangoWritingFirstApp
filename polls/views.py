@@ -71,6 +71,25 @@ def register(request):
     return HttpResponse("/")
 
 
+def login(request):
+    user_email_input = request.POST.get('user_email_login')
+    password_input = request.POST.get('password_login')
+
+    try:
+        # user = get_object_or_404(User, user_email=user_email_input)
+        user = User.objects.get(user_email=user_email_input)
+        if user.password == password_input:
+            return HttpResponse('/')
+        else:
+            return render(request, 'polls/login.html', {
+                'error_message': "Can't find user with this email"
+            })
+    except(KeyError, User.DoesNotExist):
+        return render(request, 'polls/login.html', {
+            'error_message': "Can't find user with this email"
+        })
+
+
 """def index(request):
     latest_question_list = Question.objects.order_by('-pub_date')[:5]
     output = ', '.join([q.question_text for q in latest_question_list])
