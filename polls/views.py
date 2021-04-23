@@ -61,14 +61,15 @@ def register(request):
         user_email_input = User.objects.choice_set.get(pk=request.POST['user_email'])"""
         username_input = request.POST['username']
         password_input = request.POST['password']
-        user_email_input = request.POST['user_email']
+        user_email_input = request.POST['user_email']  # trqbva proverka dali nqma sushtestuvasht
         user = User(username=username_input, password=password_input, user_email=user_email_input)
         user.save()
     except (KeyError, User.DoesNotExist):
         return render(request, 'polls/register.html', {
             'error_message': "You didn't enter values"
         })
-    return HttpResponse("/")
+    # return render(request, 'polls/home.html')
+    return HttpResponseRedirect(reverse('home', args=(user.id,)))
 
 
 def login(request):
@@ -79,14 +80,18 @@ def login(request):
         # user = get_object_or_404(User, user_email=user_email_input)
         user = User.objects.get(user_email=user_email_input)
         if user.password == password_input:
-            return HttpResponse('/')
+            """return render(request, 'polls/home.html', {
+                'error_message': "Can't login"
+            })"""
+            # return render(request, 'polls/home.html')
+            return HttpResponseRedirect(reverse('home', args=(user.id,)))
         else:
             return render(request, 'polls/login.html', {
                 'error_message': "Can't find user with this email"
             })
     except(KeyError, User.DoesNotExist):
         return render(request, 'polls/login.html', {
-            'error_message': "Can't find user with this email"
+            'error_message': "Login failed"
         })
 
 
@@ -127,3 +132,12 @@ class DetailView(generic.DetailView):
 class ResultsView(generic.DetailView):
     model = Question
     template_name = 'polls/results.html'
+
+
+class HomeView(generic.ListView):
+    template_name = 'polls/home.html'
+    context_object_name = 'latest_question_list'
+
+    def get_queryset(self):
+        # return Question.objects.order_by('-pub_date')[:5]
+        return Question.objects.filter(pub_date__lte=timezone.now()).order_by('-pub_date')[:5]
