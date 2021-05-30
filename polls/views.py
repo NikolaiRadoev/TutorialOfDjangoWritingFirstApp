@@ -63,14 +63,13 @@ def create(request, user_id):
         q = Question(user=user, question_text=question_text_input, pub_date=timezone.now())
         q.save()
         q.choice_set.create(choice_text=choice_one_input, votes=0)
+        if choice_two_input != '':
+            q.choice_set.create(choice_text=choice_two_input, votes=0)
+        elif choice_three_input != '':
+            q.choice_set.create(choice_text=choice_three_input, votes=0)
     except (KeyError, Question.DoesNotExist):
         return render(request, 'polls/create.html')
-    if (choice_two_input and choice_three_input) != '':
-        q.choice_set.create(choice_text=choice_two_input, votes=0)
-        q.choice_set.create(choice_text=choice_three_input, votes=0)
-        return HttpResponseRedirect(reverse('home', args=(user_id,)))
-    else:
-        return HttpResponseRedirect(reverse('home', args=(user_id,)))
+    return HttpResponseRedirect(reverse('home', args=(user_id,)))
 
 
 # User
