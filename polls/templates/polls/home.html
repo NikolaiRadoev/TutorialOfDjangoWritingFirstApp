@@ -1,7 +1,7 @@
 <h1>
-    Hello {{ user }}
+    Hello {{ user.username }}
 </h1>
-
+<a href="{% url 'create' user.id%}">Create new Question</a>
 {% if latest_question_list %}
 <ul>
     {% for question in latest_question_list %}

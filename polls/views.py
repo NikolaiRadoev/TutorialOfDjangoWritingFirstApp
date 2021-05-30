@@ -51,6 +51,28 @@ def vote(request, question_id):
     return HttpResponseRedirect(reverse('results', args=(question_id,)))  # polls:results
 
 
+def create(request, user_id):
+    try:
+        question_text_input = request.POST['question_text']
+        choice_one_input = request.POST['choice_one']
+        choice_two_input = request.POST['choice_two']
+        choice_three_input = request.POST['choice_three']
+
+        user = User.objects.get(id=user_id)
+
+        q = Question(user=user, question_text=question_text_input, pub_date=timezone.now())
+        q.save()
+        q.choice_set.create(choice_text=choice_one_input, votes=0)
+    except (KeyError, Question.DoesNotExist):
+        return render(request, 'polls/create.html')
+    if (choice_two_input and choice_three_input) != '':
+        q.choice_set.create(choice_text=choice_two_input, votes=0)
+        q.choice_set.create(choice_text=choice_three_input, votes=0)
+        return HttpResponseRedirect(reverse('home', args=(user_id,)))
+    else:
+        return HttpResponseRedirect(reverse('home', args=(user_id,)))
+
+
 # User
 def register(request):
     #  user = get_object_or_404(User, pk=user_id)
@@ -83,7 +105,7 @@ def login(request):
             """return render(request, 'polls/home.html', {
                 'error_message': "Can't login"
             })"""
-            # return render(request, 'polls/home.html')
+            # return render(request, 'polls/home.html', {'user': user})
             return HttpResponseRedirect(reverse('home', args=(user.id,)))
         else:
             return render(request, 'polls/login.html', {
