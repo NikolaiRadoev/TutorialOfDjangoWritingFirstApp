@@ -11,7 +11,7 @@
 
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-<form action="{% url 'vote' question.id %}" method="post"><!!--polls:vote--
+<form action="{% url 'vote' question.id user.id%}" method="post"><!!--polls:vote--
 {% csrf_token %}
 {% for choice in question.choice_set.all %}
     <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}">
@@ -34,7 +34,7 @@
 </ul>-->
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-<form action="{% url 'vote' question.id %}" method="post"><!--polls:vote-->
+<form action="{% url 'vote' question.id user.id%}" method="post"><!--polls:vote-->
 {% csrf_token %}
 {% for choice in question.choice_set.all %}
     <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}">

@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.template import loader
 from django.utils import timezone
 
-from .models import Choice, Question, User
+from .models import Choice, Question, User, Answer
 from django.views import generic
 
 # Create your views here.
@@ -14,7 +14,7 @@ from django.views import generic
     return HttpResponse("Hello, world. You're at the polls index")"""
 
 
-def detail(request, question_id):
+def detail(request, question_id, user_id):
     # return HttpResponse("You're looking at question %s" % question_id)
     #     question = get_object_or_404(Question, pk=question_id)
     #     return render(request, 'polls/detail.html', {'question': question}) # може и така
@@ -32,11 +32,12 @@ def results(request, question_id):
     return render(request, 'polls/results.html', {'question': question})
 
 
-def vote(request, question_id):
+def vote(request, question_id, user_id):
     # return HttpResponse("You're voting on question %s" % question_id)
     question = get_object_or_404(Question, pk=question_id)
     try:
         selected_choice = question.choice_set.get(pk=request.POST['choice'])
+        user = User.objects.get(id=user_id)
     except (KeyError, Choice.DoesNotExist):
         """return render(request, 'polls/detail.html', {
             'question': "You didn't select a choice",
@@ -48,7 +49,28 @@ def vote(request, question_id):
     else:
         selected_choice.votes += 1
         selected_choice.save()
+        answer = Answer(user_id=user, is_vote=True, choice_text=selected_choice)
+        answer.save()
     return HttpResponseRedirect(reverse('results', args=(question_id,)))  # polls:results
+
+
+"""def vote(request, question_id):
+    # return HttpResponse("You're voting on question %s" % question_id)
+    question = get_object_or_404(Question, pk=question_id)
+    try:
+        selected_choice = question.choice_set.get(pk=request.POST['choice'])
+    except (KeyError, Choice.DoesNotExist):
+        |||return render(request, 'polls/detail.html', {
+            'question': "You didn't select a choice",
+        })|||
+        return render(request, 'polls/detail.html', {
+            'question': question,
+            'error_message': "You didn't select a choice",
+        })
+    else:
+        selected_choice.votes += 1
+        selected_choice.save()
+    return HttpResponseRedirect(reverse('results', args=(question_id,)))  # polls:results"""
 
 
 def create(request, user_id):
