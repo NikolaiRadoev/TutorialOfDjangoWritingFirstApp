@@ -49,7 +49,7 @@ def vote(request, question_id, user_id):
     else:
         selected_choice.votes += 1
         selected_choice.save()
-        answer = Answer(user_id=user, is_vote=True, choice_text=selected_choice)
+        answer = Answer(user_id=user, is_vote=True, choice_text=selected_choice, question_text=question)
         answer.save()
     return HttpResponseRedirect(reverse('results', args=(question_id,)))  # polls:results
 
@@ -87,7 +87,7 @@ def create(request, user_id):
         q.choice_set.create(choice_text=choice_one_input, votes=0)
         if choice_two_input != '':
             q.choice_set.create(choice_text=choice_two_input, votes=0)
-        elif choice_three_input != '':
+        if choice_three_input != '':
             q.choice_set.create(choice_text=choice_three_input, votes=0)
     except (KeyError, Question.DoesNotExist):
         return render(request, 'polls/create.html')
@@ -136,6 +136,47 @@ def login(request):
         return render(request, 'polls/login.html', {
             'error_message': "Login failed"
         })
+
+
+def home(request, user_id):
+    latest_question_list = list()
+    voted_question_list = list()
+    questions = Question.objects.all()
+    #  choices = questions.choice_set.all()
+    user = User.objects.get(id=user_id)
+
+    for question in questions:
+        latest_question_list.insert(0, question)
+    answers = Answer.objects.filter(user_id=user)
+    for answer in answers:
+        if latest_question_list.__contains__(answer.question_text):
+            voted_question_list.insert(0, answer.question_text)
+            latest_question_list.remove(answer.question_text)
+
+    """try:
+        answers = Answer.objects.filter(user_id=user)
+        for question in questions:
+            for answer in answers:
+                #  for choice in question.choice_set.all():
+                    if question == answer.question_text:
+                        if answer.is_vote:
+                            voted_question_list.insert(0, question)
+                            break
+                    else:
+                        if not latest_question_list.__contains__(question):
+                            latest_question_list.insert(0, question)
+                        break
+    except(KeyError, Answer.DoesNotExist):
+        return render(request, 'polls/home.html', {
+            'latest_question_list': latest_question_list,
+            'user': user,
+            'voted_question_list': voted_question_list,
+        })"""
+    return render(request, 'polls/home.html', {
+        'latest_question_list': latest_question_list,
+        'user': user,
+        'voted_question_list': voted_question_list,
+    })
 
 
 """def index(request):

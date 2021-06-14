@@ -47,6 +47,9 @@ class User(models.Model):
     password = models.CharField(max_length=100)
     user_email = models.CharField(max_length=100)
 
+    def __str__(self):
+        return self.username
+
 
 class Question(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -79,3 +82,4 @@ class Answer(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     is_vote = models.BooleanField(default=False)
     choice_text = models.ForeignKey(Choice, on_delete=models.CASCADE)
+    question_text = models.ForeignKey(Question, on_delete=models.CASCADE)

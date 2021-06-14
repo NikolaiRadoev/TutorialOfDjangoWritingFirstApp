@@ -2,12 +2,29 @@
     Hello {{ user.username }}
 </h1>
 <a href="{% url 'create' user.id%}">Create new Question</a>
+
+<p>Available Questions for votes</p>
 {% if latest_question_list %}
 <ul>
     {% for question in latest_question_list %}
     <li>
         <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
         <a href="{% url 'detail' question.id user.id%}">{{ question.question_text }}</a><!--polls:detail-->
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+    <p>No polls are available</p>
+{% endif %}
+
+<br>
+<p>Voted Questions</p>
+{% if voted_question_list %}
+<ul>
+    {% for question in voted_question_list %}
+    <li>
+        <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
+        <a href="{% url 'results' question.id%}">{{ question.question_text }}</a><!--polls:detail-->
     </li>
     {% endfor %}
 </ul>
