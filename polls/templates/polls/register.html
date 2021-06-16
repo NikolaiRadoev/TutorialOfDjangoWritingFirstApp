@@ -6,6 +6,7 @@
 </head>
 <body>
     <h1>Register</h1>
+    <!--{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}-->
     <form action="{% url 'register' %}" method="post">{% csrf_token %}<!--polls:vote-->
 
     <input type="text" name="username" id="username" placeholder="Enter Username" required>

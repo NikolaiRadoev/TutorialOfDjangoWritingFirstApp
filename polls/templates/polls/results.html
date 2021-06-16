@@ -8,3 +8,7 @@
 </ul>
 
 <!--<a href="{% url 'results' question.id%}">Vote again</a>--><!--polls:detail-->
+
+{% if selected_choice %}
+<p>Your vote is: {{ selected_choice }}</p>
+{% endif %}

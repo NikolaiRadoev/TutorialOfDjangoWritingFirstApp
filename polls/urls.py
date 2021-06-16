@@ -27,4 +27,5 @@ urlpatterns = [
     #  path('<int:pk>/home/', views.HomeView.as_view(), name='home'),
     path('<int:user_id>/home/', views.home, name='home'),
     path('create/<int:user_id>/', views.create, name='create'),
+    path('<int:user_id>/result/<int:question_id>/', views.result, name='result'),
 ]

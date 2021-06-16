@@ -109,7 +109,7 @@ def register(request):
         user.save()
     except (KeyError, User.DoesNotExist):
         return render(request, 'polls/register.html', {
-            'error_message': "You didn't enter values"
+            'error_message': "Please enter your data below"
         })
     # return render(request, 'polls/home.html')
     return HttpResponseRedirect(reverse('home', args=(user.id,)))
@@ -178,6 +178,18 @@ def home(request, user_id):
         'voted_question_list': voted_question_list,
     })
 
+
+def result(request, user_id, question_id):
+    question = Question.objects.get(id=question_id)
+    user = User.objects.get(id=user_id)
+    answer = Answer.objects.filter(user_id=user, question_text=question)
+    selected_choice = ''
+    for ans in answer:
+        selected_choice = ans.choice_text
+    return render(request, 'polls/results.html', {
+        'selected_choice': selected_choice,
+        'question': question,
+    })
 
 """def index(request):
     latest_question_list = Question.objects.order_by('-pub_date')[:5]
