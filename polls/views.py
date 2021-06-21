@@ -105,7 +105,7 @@ def register(request):
         username_input = request.POST['username']
         password_input = request.POST['password']
         user_email_input = request.POST['user_email']  # trqbva proverka dali nqma sushtestuvasht
-        user = User(username=username_input, password=password_input, user_email=user_email_input)
+        user = User(username=username_input, password=password_input, user_email=user_email_input, is_active=True)
         user.save()
     except (KeyError, User.DoesNotExist):
         return render(request, 'polls/register.html', {
@@ -126,6 +126,8 @@ def login(request):
             """return render(request, 'polls/home.html', {
                 'error_message': "Can't login"
             })"""
+            user.is_active = True
+            user.save()
             # return render(request, 'polls/home.html', {'user': user})
             return HttpResponseRedirect(reverse('home', args=(user.id,)))
         else:
@@ -145,15 +147,18 @@ def home(request, user_id):
     #  choices = questions.choice_set.all()
     user = User.objects.get(id=user_id)
 
-    for question in questions:
-        latest_question_list.insert(0, question)
-    answers = Answer.objects.filter(user_id=user)
-    for answer in answers:
-        if latest_question_list.__contains__(answer.question_text):
-            voted_question_list.insert(0, answer.question_text)
-            latest_question_list.remove(answer.question_text)
+    if not user.is_active:
+        return render(request, 'polls/login.html')
+    else:
+        for question in questions:
+            latest_question_list.insert(0, question)
+        answers = Answer.objects.filter(user_id=user)
+        for answer in answers:
+            if latest_question_list.__contains__(answer.question_text):
+                voted_question_list.insert(0, answer.question_text)
+                latest_question_list.remove(answer.question_text)
 
-    """try:
+        """try:
         answers = Answer.objects.filter(user_id=user)
         for question in questions:
             for answer in answers:
@@ -172,11 +177,11 @@ def home(request, user_id):
             'user': user,
             'voted_question_list': voted_question_list,
         })"""
-    return render(request, 'polls/home.html', {
-        'latest_question_list': latest_question_list,
-        'user': user,
-        'voted_question_list': voted_question_list,
-    })
+        return render(request, 'polls/home.html', {
+            'latest_question_list': latest_question_list,
+            'user': user,
+            'voted_question_list': voted_question_list,
+            })
 
 
 def result(request, user_id, question_id):
@@ -190,6 +195,14 @@ def result(request, user_id, question_id):
         'selected_choice': selected_choice,
         'question': question,
     })
+
+
+def logout(request, user_id):
+    user = User.objects.get(id=user_id)
+    user.is_active = False
+    user.save()
+    return HttpResponseRedirect(reverse('index'))
+
 
 """def index(request):
     latest_question_list = Question.objects.order_by('-pub_date')[:5]

@@ -1,6 +1,7 @@
 <h1>
     Hello {{ user.username }}
 </h1>
+<a href="{% url 'logout' user.id%}" style="float: right;">Logout</a>
 <a href="{% url 'create' user.id%}">Create new Question</a>
 
 <p>Available Questions for votes</p>
