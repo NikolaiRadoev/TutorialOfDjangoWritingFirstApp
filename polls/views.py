@@ -106,14 +106,19 @@ def register(request):
         username_input = request.POST['username']
         password_input = request.POST['password']
         user_email_input = request.POST['user_email']  # trqbva proverka dali nqma sushtestuvasht
+
+    except (KeyError, User.DoesNotExist):
+        return render(request, 'polls/register.html')
+    # return render(request, 'polls/home.html')
+    try:
+        u = User.objects.get(user_email=user_email_input)
+        return render(request, 'polls/register.html', {
+            'error_message': "This email is taken Try another"
+        })
+    except (KeyError, User.DoesNotExist):
         user = User(username=username_input, password=password_input, user_email=user_email_input, is_active=True)
         user.save()
-    except (KeyError, User.DoesNotExist):
-        return render(request, 'polls/register.html', {
-            'error_message': "Please enter your data below"
-        })
-    # return render(request, 'polls/home.html')
-    return HttpResponseRedirect(reverse('home', args=(user.id,)))
+        return HttpResponseRedirect(reverse('home', args=(user.id,)))
 
 
 def login(request):
