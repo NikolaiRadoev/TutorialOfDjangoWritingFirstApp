@@ -19,7 +19,8 @@ from . import views
 ]"""
 urlpatterns = [
     path('', views.IndexView.as_view(), name='index'),
-    path('<int:pk>/<int:user_id>', views.DetailView.as_view(), name='detail'),
+    # path('<int:pk>/<int:user_id>', views.DetailView.as_view(), name='detail'),
+    path('<int:question_id>/<int:user_id>', views.detail, name='detail'),
     path('<int:pk>/results/', views.ResultsView.as_view(), name='results'),
     path('<int:question_id>/vote/<int:user_id>', views.vote, name='vote'),
     path('register/', views.register, name='register'),

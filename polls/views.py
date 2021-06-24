@@ -20,9 +20,10 @@ def detail(request, question_id, user_id):
     #     return render(request, 'polls/detail.html', {'question': question}) # може и така
     try:
         question = Question.objects.get(pk=question_id)
+        user = User.objects.get(id=user_id)
     except Question.DoesNotExist:
         raise Http404("Question does not exist")
-    return render(request, 'polls/detail.html', {'question': question})
+    return render(request, 'polls/detail.html', {'question': question, 'user': user})
 
 
 def results(request, question_id):
@@ -51,7 +52,7 @@ def vote(request, question_id, user_id):
         selected_choice.save()
         answer = Answer(user_id=user, is_vote=True, choice_text=selected_choice, question_text=question)
         answer.save()
-    return HttpResponseRedirect(reverse('results', args=(question_id,)))  # polls:results
+    return HttpResponseRedirect(reverse('home', args=(user_id,)))  # polls:results
 
 
 """def vote(request, question_id):
