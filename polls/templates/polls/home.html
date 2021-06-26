@@ -1,17 +1,26 @@
 <h1>
     Hello {{ user.username }}
 </h1>
-<a href="{% url 'logout' user.id%}" style="float: right;">Logout</a>
-<a href="{% url 'create' user.id%}">Create new Question</a>
+
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<a href="{% url 'logout' user.id %}" style="float: right;">Logout</a>
+<a href="{% url 'create' user.id %}">Create new Question</a>
 
 <p>Available Questions for votes</p>
-{% if latest_question_list %}
+{% if open_questions %}
 <ul>
-    {% for question in latest_question_list %}
+    {% for question in open_questions %}
     <li>
         <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
         <a href="{% url 'detail' question.id user.id%}">{{ question.question_text }}</a><!--polls:detail-->
-    </li>
+    </li>       
     {% endfor %}
 </ul>
 {% else %}
@@ -20,12 +29,14 @@
 
 <br>
 <p>Voted Questions</p>
-{% if voted_question_list %}
+{% if user_answers %}
 <ul>
-    {% for question in voted_question_list %}
+    {% for answer in user_answers %}
     <li>
         <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
-        <a href="{% url 'result' user.id question.id %}">{{ question.question_text }}</a><!--polls:detail-->
+        <a href="{% url 'result' user.id answer.question_text.id %}">{{ answer.question_text }}</a>
+        You voted with: {{ answer.choice_text }}
+
     </li>
     {% endfor %}
 </ul>

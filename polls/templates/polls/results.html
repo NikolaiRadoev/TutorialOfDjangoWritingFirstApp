@@ -9,6 +9,8 @@
 
 <!--<a href="{% url 'results' question.id%}">Vote again</a>--><!--polls:detail-->
 
-{% if selected_choice %}
-<p>Your vote is: {{ selected_choice }}</p>
+{% if answer %}
+<p>Your vote is: {{ answer.choice_text.choice_text }}</p>
+{% else %}
+<p>You didnt answer this question yet</p>
 {% endif %}
