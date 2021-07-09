@@ -5,13 +5,13 @@
 {% if messages %}
 <ul class="messages">
     {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }} </li>
     {% endfor %}
 </ul>
 {% endif %}
 
-<a href="{% url 'logout' user.id %}" style="float: right;">Logout</a>
-<a href="{% url 'create' user.id %}">Create new Question</a>
+<a href="{% url 'logout' %}" style="float: right;">Logout</a>
+<a href="{% url 'create' %}">Create new Question</a>
 
 <p>Available Questions for votes</p>
 {% if open_questions %}
@@ -19,7 +19,7 @@
     {% for question in open_questions %}
     <li>
         <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
-        <a href="{% url 'detail' question.id user.id%}">{{ question.question_text }}</a><!--polls:detail-->
+        <a href="{% url 'detail' question.id %}">{{ question.question_text }}</a><!--polls:detail-->
     </li>       
     {% endfor %}
 </ul>
@@ -34,7 +34,7 @@
     {% for answer in user_answers %}
     <li>
         <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
-        <a href="{% url 'result' user.id answer.question_text.id %}">{{ answer.question_text }}</a>
+        <a href="{% url 'results' answer.question_text.id %}">{{ answer.question_text }}</a>
         You voted with: {{ answer.choice_text }}
 
     </li>
