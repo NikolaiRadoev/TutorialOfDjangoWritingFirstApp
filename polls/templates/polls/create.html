@@ -4,9 +4,9 @@
 
 {% block content %}
         <h1>Create new question</h1>
-    <form action="{% url 'create' %}" method="post">{% csrf_token %}<!--polls:vote-->
-
-    <input type="text" name="question_text" id="question_text" placeholder="Enter name of your question" required>
+    <form action="{% url 'create' %}" method="post">{% csrf_token %}
+    {{form.as_ul}}
+    <!--<input type="text" name="question_text" id="question_text" placeholder="Enter name of your question" required>
         <br>
         <br>
     <input type="text" name="choice_one" id="choice_one" placeholder="Enter your choice" required>
@@ -17,7 +17,7 @@
         <br>
     <input type="text" name="choice_three" id="choice_three" placeholder="Enter your choice">
         <br>
-        <br>
+        <br>-->
     <input type="submit" value="Create">
 </form>
 {% endblock content %}

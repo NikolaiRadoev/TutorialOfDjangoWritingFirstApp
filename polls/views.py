@@ -8,7 +8,7 @@ from django.template import loader
 from django.utils import timezone
 
 from .models import Question, User, Answer
-from .forms import QuestionChoiceForm
+from .forms import QuestionChoiceForm, CreateNewQuestionForm, LoginUserForm, RegisterUserForm
 from django.views import generic
 
 # Create your views here.
@@ -76,96 +76,108 @@ def create(request):
     if not user.id == _user_id:
         raise ValueError("You don't have permission")
 
+    form = CreateNewQuestionForm(request.POST or None)
+
     if request.method == "POST":
-        question_text_input = request.POST["question_text"]
-        choice_one_input = request.POST["choice_one"]
-        choice_two_input = request.POST["choice_two"]
-        choice_three_input = request.POST["choice_three"]
+        if form.is_valid():
+            """question_text_input = request.POST["question_text"]
+            choice_one_input = request.POST["choice_one"]
+            choice_two_input = request.POST["choice_two"]
+            choice_three_input = request.POST["choice_three"]"""
 
-        q = Question(
-            user=user, question_text=question_text_input, pub_date=timezone.now()
-        )
-        q.save()
-        q.choice_set.create(choice_text=choice_one_input, votes=0)
-        if choice_two_input:
-            q.choice_set.create(choice_text=choice_two_input, votes=0)
-        if choice_three_input:
-            q.choice_set.create(choice_text=choice_three_input, votes=0)
+            question_text_input = form.cleaned_data["question_text"]
+            choice_one_input = form.cleaned_data["choice_one"]
+            choice_two_input = form.cleaned_data["choice_two"]
+            choice_three_input = form.cleaned_data["choice_three"]
 
-        return HttpResponseRedirect(reverse("home"))
+            q = Question(
+                user=user, question_text=question_text_input, pub_date=timezone.now()
+            )
+            q.save()
+            q.choice_set.create(choice_text=choice_one_input, votes=0)
+            if choice_two_input:
+                q.choice_set.create(choice_text=choice_two_input, votes=0)
+            if choice_three_input:
+                q.choice_set.create(choice_text=choice_three_input, votes=0)
 
-    return render(request, "polls/create.html", {"user": user})
+            return HttpResponseRedirect(reverse("home"))
+
+    return render(request, "polls/create.html", {"user": user, "form": form})
 
 
 # User
 def register(request):
-    if request.method == "POST":
-        try:
-            """username_input = User.objects.choice_set.get(pk=request.GET['username'])
-            password_input = User.objects.choice_set.get(pk=request.POST['password'])
-            user_email_input = User.objects.choice_set.get(pk=request.POST['user_email'])"""
-            username_input = request.POST["username"]
-            password_input = request.POST["password"]
-            user_email_input = request.POST[
-                "user_email"
-            ]  # trqbva proverka dali nqma sushtestuvasht
+    form = RegisterUserForm(request.POST or None)
 
-        except (KeyError, User.DoesNotExist):
-            return render(request, "polls/register.html")
-        # return render(request, 'polls/home.html')
-        try:
-            u = User.objects.get(user_email=user_email_input)
-            return render(
-                request,
-                "polls/register.html",
-                {"error_message": "This email is taken Try another"},
-            )
-        except (KeyError, User.DoesNotExist):
-            user = User(
-                username=username_input,
-                password=password_input,
-                user_email=user_email_input,
-                is_active=True,
-            )
-            user.save()
-            request.session["user_id"] = user.id
-            return HttpResponseRedirect(reverse("home"))
+    if request.method == "POST":
+        if form.is_valid():
+            try:
+                """username_input = User.objects.choice_set.get(pk=request.GET['username'])
+                password_input = User.objects.choice_set.get(pk=request.POST['password'])
+                user_email_input = User.objects.choice_set.get(pk=request.POST['user_email'])"""
+                username_input = form.cleaned_data["username"]
+                password_input = form.cleaned_data["password"]
+                user_email_input = form.cleaned_data["email"]
+            except (KeyError, User.DoesNotExist):
+                return render(request, "polls/register.html", {"form": form})
+            # return render(request, 'polls/home.html')
+            try:
+                u = User.objects.get(user_email=user_email_input)
+                return render(
+                    request,
+                    "polls/register.html",
+                    {"error_message": "This email is taken Try another", "form": form},
+                )
+            except (KeyError, User.DoesNotExist):
+                user = User(
+                    username=username_input,
+                    password=password_input,
+                    user_email=user_email_input,
+                    is_active=True,
+                )
+                user.save()
+                request.session["user_id"] = user.id
+                return HttpResponseRedirect(reverse("home"))
     else:
         return render(
             request,
             "polls/register.html",
+            {"form": form}
         )
 
 
 def login(request):
+    form = LoginUserForm(request.POST or None)
     if request.method == "POST":
-        user_email_input = request.POST.get("user_email_login")
-        password_input = request.POST.get("password_login")
+        if form.is_valid():
+            user_email_input = form.cleaned_data["email"]
+            password_input = form.cleaned_data["password"]
 
-        try:
-            # user = get_object_or_404(User, user_email=user_email_input)
-            user = User.objects.get(user_email=user_email_input)
-            if user.password == password_input:
-                """return render(request, 'polls/home.html', {
-                    'error_message': "Can't login"
-                })"""
-                request.session["user_id"] = user.id
-                user.save()
-                # return render(request, 'polls/home.html', {'user': user})
-                return HttpResponseRedirect(reverse("home"))
-            else:
-                return render(
-                    request,
-                    "polls/login.html",
-                    {"error_message": "Can't find user with this email"},
-                )
-        except (KeyError, User.DoesNotExist):
-            return render(request, "polls/login.html", {"error_message": "Login failed"})
+            try:
+                # user = get_object_or_404(User, user_email=user_email_input)
+                user = User.objects.get(user_email=user_email_input)
+                if user.password == password_input:
+                    """return render(request, 'polls/home.html', {
+                        'error_message': "Can't login"
+                    })"""
+                    request.session["user_id"] = user.id
+                    user.save()
+                    # return render(request, 'polls/home.html', {'form': form})
+                    return HttpResponseRedirect(reverse("home"))
+                else:
+                    return render(
+                        request,
+                        "polls/login.html",
+                        {"error_message": "Can't find user with this email",
+                         "form": form},
+                    )
+            except (KeyError, User.DoesNotExist):
+                return render(request, "polls/login.html", {"error_message": "Login failed", "form": form})
     else:
         return render(
             request,
             "polls/login.html",
-            {"error_message": "Problem with login"},
+            {"error_message": "Problem with login", "form": form},
         )
 
 

@@ -6,8 +6,8 @@
         <h1>Register</h1>
     {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
     <form action="{% url 'register' %}" method="post">{% csrf_token %}<!--polls:vote-->
-
-    <input type="text" name="username" id="username" placeholder="Enter Username" required>
+        {{form.as_ul}}
+    <!--<input type="text" name="username" id="username" placeholder="Enter Username" required>
         <br>
         <br>
     <input type="password" name="password" id="password" placeholder="Enter Password" required>
@@ -15,7 +15,7 @@
         <br>
     <input type="email" name="user_email" id="user_email" placeholder="Enter Email" required>
         <br>
-        <br>
+        <br>-->
     <input type="submit" value="Register">
 </form>
 {% endblock content %}
