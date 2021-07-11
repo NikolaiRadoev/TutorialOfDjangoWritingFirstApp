@@ -1,45 +1,53 @@
-<h1>
-    Hello {{ user.username }}
-</h1>
+{% extends "base.html" %}
 
-{% if messages %}
-<ul class="messages">
-    {% for message in messages %}
-    <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }} </li>
-    {% endfor %}
-</ul>
-{% endif %}
+{% block title %} Home {% endblock title%}
 
-<a href="{% url 'logout' %}" style="float: right;">Logout</a>
-<a href="{% url 'create' %}">Create new Question</a>
+{% block content %}
 
-<p>Available Questions for votes</p>
-{% if open_questions %}
-<ul>
-    {% for question in open_questions %}
-    <li>
-        <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
-        <a href="{% url 'detail' question.id %}">{{ question.question_text }}</a><!--polls:detail-->
-    </li>       
-    {% endfor %}
-</ul>
-{% else %}
-    <p>No polls are available</p>
-{% endif %}
+    <h1>
+        Hello {{ user.username }}
+    </h1>
 
-<br>
-<p>Voted Questions</p>
-{% if user_answers %}
-<ul>
-    {% for answer in user_answers %}
-    <li>
-        <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
-        <a href="{% url 'results' answer.question_text.id %}">{{ answer.question_text }}</a>
-        You voted with: {{ answer.choice_text }}
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }} </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 
-    </li>
-    {% endfor %}
-</ul>
-{% else %}
-    <p>No polls are available</p>
-{% endif %}
+    <a href="{% url 'logout' %}" style="float: right;">Logout</a>
+    <a href="{% url 'create' %}">Create new Question</a>
+
+    <p>Available Questions for votes</p>
+    {% if open_questions %}
+    <ul>
+        {% for question in open_questions %}
+        <li>
+            <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
+            <a href="{% url 'detail' question.id %}">{{ question.question_text }}</a><!--polls:detail-->
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+        <p>No polls are available</p>
+    {% endif %}
+
+    <br>
+    <p>Voted Questions</p>
+    {% if user_answers %}
+    <ul>
+        {% for answer in user_answers %}
+        <li>
+            <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
+            <a href="{% url 'results' answer.question_text.id %}">{{ answer.question_text }}</a>
+            You voted with: {{ answer.choice_text }}
+
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+        <p>No polls are available</p>
+    {% endif %}
+
+{% endblock content %}

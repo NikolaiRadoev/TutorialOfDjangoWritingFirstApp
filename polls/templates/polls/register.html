@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Register</title>
-</head>
-<body>
-    <h1>Register</h1>
+{% extends "base.html" %}
+
+{% block title %} Register {% endblock title%}
+
+{% block content %}
+        <h1>Register</h1>
     {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
     <form action="{% url 'register' %}" method="post">{% csrf_token %}<!--polls:vote-->
 
@@ -20,5 +18,4 @@
         <br>
     <input type="submit" value="Register">
 </form>
-</body>
-</html>
+{% endblock content %}

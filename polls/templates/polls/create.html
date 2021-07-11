@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Create</title>
-</head>
-<body>
-    <h1>Create new question</h1>
+{% extends "base.html" %}
+
+{% block title %} Create new question{% endblock title%}
+
+{% block content %}
+        <h1>Create new question</h1>
     <form action="{% url 'create' %}" method="post">{% csrf_token %}<!--polls:vote-->
 
     <input type="text" name="question_text" id="question_text" placeholder="Enter name of your question" required>
@@ -22,5 +20,4 @@
         <br>
     <input type="submit" value="Create">
 </form>
-</body>
-</html>
+{% endblock content %}
