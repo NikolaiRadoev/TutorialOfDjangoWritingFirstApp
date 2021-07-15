@@ -11,6 +11,16 @@ from .models import Question, User, Answer
 from .forms import QuestionChoiceForm, CreateNewQuestionForm, LoginUserForm, RegisterUserForm
 from django.views import generic
 
+
+def get_session_user(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise ValueError("You are not logged or don't have permission")
+    else:
+        user = User.objects.get(pk=user_id)
+        return user
+
+
 # Create your views here.
 # 1
 """def index(request):
@@ -18,20 +28,9 @@ from django.views import generic
 
 
 def detail(request, question_id):
-    _user_id = request.session.get("user_id")
+    user = get_session_user(request)
 
-    if not _user_id:
-        raise ValueError("You are not logged")
-
-    user = User.objects.get(pk=_user_id)
-
-    if not user.id == _user_id:
-        raise ValueError("You don't have permission")
-
-    try:
-        question = Question.objects.get(pk=question_id)
-    except Question.DoesNotExist:
-        raise Http404("Question does not exist")
+    question = get_object_or_404(Question, pk=question_id)
 
     form = QuestionChoiceForm(request.POST or None, question=question)
 
@@ -66,15 +65,7 @@ def detail(request, question_id):
 
 
 def create(request):
-    _user_id = request.session.get("user_id")
-
-    if not _user_id:
-        raise ValueError("You are not logged")
-
-    user = User.objects.get(pk=_user_id)
-
-    if not user.id == _user_id:
-        raise ValueError("You don't have permission")
+    user = get_session_user(request)
 
     form = CreateNewQuestionForm(request.POST or None)
 
@@ -182,15 +173,7 @@ def login(request):
 
 
 def home(request):
-    _user_id = request.session.get("user_id")
-
-    if not _user_id:
-        raise ValueError("You are not logged")
-
-    user = User.objects.get(pk=_user_id)
-
-    if not user.id == _user_id:
-        raise ValueError("You don't have permission")
+    user = get_session_user(request)
 
     user_answers = list(user.answer_set.all())
     open_questions = (
@@ -211,17 +194,9 @@ def home(request):
 
 
 def results(request, question_id):
-    user = None
     try:
-        _user_id = request.session.get("user_id")
-
-        if _user_id:
-            # raise ValueError("You are not logged")
-            user = User.objects.get(pk=_user_id)
-
-            if not user.id == _user_id:
-                raise ValueError("You don't have permission")
-    except User.DoesNotExist:
+        user = get_session_user(request)
+    except ValueError:
         user = None
 
     try:
@@ -246,19 +221,10 @@ def results(request, question_id):
 
 
 def logout(request):
-    _user_id = request.session.get("user_id")
+    if get_session_user(request):
+        del request.session["user_id"]
 
-    if not _user_id:
-        raise ValueError("You are not logged")
-
-    user = User.objects.get(pk=_user_id)
-
-    if not user.id == _user_id:
-        raise ValueError("You don't have permission")
-
-    del request.session["user_id"]
-
-    return HttpResponseRedirect(reverse("index"))
+        return HttpResponseRedirect(reverse("index"))
 
 
 """def index(request):
