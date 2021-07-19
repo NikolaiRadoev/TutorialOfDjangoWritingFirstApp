@@ -1,21 +1,49 @@
 from django import forms
+from django.db import transaction
+from .models import Question, User, Answer
+from django.utils.translation import gettext_lazy
+from django.forms import ModelForm
 
 
 class QuestionChoiceForm(forms.Form):
+
     def __init__(self, *args, **kwargs):
-        question = kwargs.pop("question")
+        self.question = kwargs.pop("question")
+        self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
-        self.fields["insert_1"] = forms.CharField()
-        self.fields["choice"] = forms.ChoiceField(
+        # self.fields["insert_1"] = forms.CharField()
+        self.fields["choice_id"] = forms.ChoiceField(
             widget=forms.RadioSelect,
-            choices=[(choice.id, str(choice)) for choice in question.choice_set.all()],
+            choices=[(choice.id, str(choice)) for choice in self.question.choice_set.all()],
         )
 
-    def clean_insert_1(self):
+    """def clean_insert_1(self):
         if not self.cleaned_data["insert_1"] == "1":
             raise forms.ValidationError("You have forgotten 1!")
 
-        return self.cleaned_data["insert_1"]
+        return self.cleaned_data["insert_1"]"""
+    def clean(self):
+        cleaned_data = super(QuestionChoiceForm, self).clean()
+        choice_id = cleaned_data["choice_id"]
+
+        try:
+            selected_choice = self.question.choice_set.get(pk=choice_id)
+        except Exception as e:
+            raise forms.ValidationError({"choice_id": "Choice not found %s" % e})
+
+        cleaned_data["selected_choice"] = selected_choice
+        return cleaned_data
+
+    def save(self):
+        try:
+            with transaction.atomic():
+                selected_choice = self.cleaned_data["selected_choice"]
+                selected_choice.votes += 1
+                selected_choice.save()
+                answer = Answer(user_id=self.user, is_vote=True, choice_text=selected_choice, question_text=self.question)
+                answer.save()
+        except Exception as e:
+            raise forms.ValidationError({None: "An Unexpected error %s " % e})
 
 
 class CreateNewQuestionForm(forms.Form):
@@ -38,18 +66,48 @@ class CreateNewQuestionForm(forms.Form):
                                                       widget=forms.TextInput(attrs={'placeholder': 'Enter your choice'}))
 
 
-class LoginUserForm(forms.Form):
-    def __init__(self, *args, **kwargs):
+class LoginUserForm(ModelForm):
+    """def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["email"] = forms.CharField(widget=forms.EmailInput(attrs={'placeholder': 'Enter your email'}),
                                                max_length=100)
         self.fields["password"] = forms.CharField(
             widget=forms.PasswordInput(attrs={'placeholder': 'Enter your password'}),
-            max_length=100)
+            max_length=100)"""
+    class Meta:
+        model = User
+        exclude = ['username', 'is_active']
+        labels = {'user_email': 'Email'}
+        #  help_texts = {'user_email': 'Enter valid email address'}
+        widgets = {
+            'password': forms.PasswordInput(),
+            'user_email': forms.EmailInput(),
+        }
+
+    def clean(self):
+        cleaned_data = super(LoginUserForm, self).clean()
+        user_email_input = cleaned_data["user_email"]
+        password_input = cleaned_data["password"]
+
+        try:
+            #  user = get_object_or_404(User, user_email=user_email_input)
+            user = User.objects.get(user_email=user_email_input)
+            if user.password == password_input:
+                return cleaned_data
+            else:
+                raise forms.ValidationError("Incorrect password")
+
+        except (KeyError, User.DoesNotExist):
+            raise forms.ValidationError("Incorrect email")
+
+    def save(self, request):
+        user_email_input = self.cleaned_data["user_email"]
+        user = User.objects.get(user_email=user_email_input)
+        request.session["user_id"] = user.id
 
 
-class RegisterUserForm(forms.Form):
-    def __init__(self, *args, **kwargs):
+class RegisterUserForm(ModelForm):  # forms.Form
+    """def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"] = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Enter Username'}),
                                                   max_length=100)
@@ -57,4 +115,39 @@ class RegisterUserForm(forms.Form):
             widget=forms.PasswordInput(attrs={'placeholder': 'Enter Password'}),
             max_length=100)
         self.fields["email"] = forms.CharField(widget=forms.EmailInput(attrs={'placeholder': 'Enter your email'}),
-                                               max_length=100)
+                                               max_length=100)"""
+    class Meta:
+        model = User
+        #  fields = ['username', 'password', 'email']
+        exclude = ['is_active']
+        labels = {'user_email': 'Email'}
+        widgets = {
+            'password': forms.PasswordInput(),
+            'user_email': forms.EmailInput(),
+        }
+
+    def clean(self):
+        cleaned_data = super(RegisterUserForm, self).clean()
+        username_input = cleaned_data["username"]
+        password_input = cleaned_data["password"]
+        user_email_input = cleaned_data["user_email"]
+
+        try:
+            u = User.objects.get(user_email=user_email_input)
+            raise forms.ValidationError("email is taken")
+        except User.DoesNotExist:
+            return cleaned_data
+
+    def save(self, request):
+        username_input = self.cleaned_data["username"]
+        password_input = self.cleaned_data["password"]
+        user_email_input = self.cleaned_data["user_email"]
+
+        user = User(
+            username=username_input,
+            password=password_input,
+            user_email=user_email_input,
+            # is_active=True,
+        )
+        user.save()
+        request.session["user_id"] = user.id

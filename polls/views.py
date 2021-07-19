@@ -32,11 +32,11 @@ def detail(request, question_id):
 
     question = get_object_or_404(Question, pk=question_id)
 
-    form = QuestionChoiceForm(request.POST or None, question=question)
+    form = QuestionChoiceForm(request.POST or None, question=question, user=user)
 
     if request.method == "POST":
         if form.is_valid():
-            choice_id = form.cleaned_data["choice"]
+            """choice_id = form.cleaned_data["choice"]
 
             try:
                 selected_choice = question.choice_set.get(pk=choice_id)
@@ -57,7 +57,13 @@ def detail(request, question_id):
                     messages.success(request, "Nice")
                     return redirect("home")
                 except Exception as e:
-                    messages.error(request, "Unexpected error: %s" % e)
+                    messages.error(request, "Unexpected error: %s" % e)"""
+            try:
+                form.save()
+                messages.success(request, 'Nice')
+                return redirect("home")
+            except forms.ValidationError as e:
+                form.add_error(e)
 
     return render(
         request, "polls/detail.html", {"question": question, "user": user, "form": form}
@@ -102,10 +108,10 @@ def register(request):
 
     if request.method == "POST":
         if form.is_valid():
-            try:
-                """username_input = User.objects.choice_set.get(pk=request.GET['username'])
-                password_input = User.objects.choice_set.get(pk=request.POST['password'])
-                user_email_input = User.objects.choice_set.get(pk=request.POST['user_email'])"""
+            """try:
+                # username_input = User.objects.choice_set.get(pk=request.GET['username'])
+                # password_input = User.objects.choice_set.get(pk=request.POST['password'])
+                # user_email_input = User.objects.choice_set.get(pk=request.POST['user_email'])
                 username_input = form.cleaned_data["username"]
                 password_input = form.cleaned_data["password"]
                 user_email_input = form.cleaned_data["email"]
@@ -134,23 +140,30 @@ def register(request):
             request,
             "polls/register.html",
             {"form": form}
-        )
+        )"""
+            try:
+                form.save(request)
+                messages.success(request, 'Your registration is Successful')
+                return redirect("home")
+            except forms.ValidationError as e:
+                form.add_error(e)
+
+    return render(
+        request, "polls/register.html", {"form": form}
+    )
 
 
 def login(request):
     form = LoginUserForm(request.POST or None)
     if request.method == "POST":
         if form.is_valid():
-            user_email_input = form.cleaned_data["email"]
+            """user_email_input = form.cleaned_data["email"]
             password_input = form.cleaned_data["password"]
 
             try:
                 # user = get_object_or_404(User, user_email=user_email_input)
                 user = User.objects.get(user_email=user_email_input)
                 if user.password == password_input:
-                    """return render(request, 'polls/home.html', {
-                        'error_message': "Can't login"
-                    })"""
                     request.session["user_id"] = user.id
                     user.save()
                     # return render(request, 'polls/home.html', {'form': form})
@@ -169,7 +182,17 @@ def login(request):
             request,
             "polls/login.html",
             {"error_message": "Problem with login", "form": form},
-        )
+        )"""
+            try:
+                form.save(request)
+                messages.success(request, 'Welcome back')
+                return redirect("home")
+            except forms.ValidationError as e:
+                form.add_error(e)
+
+    return render(
+        request, "polls/login.html", {"form": form}
+    )
 
 
 def home(request):
