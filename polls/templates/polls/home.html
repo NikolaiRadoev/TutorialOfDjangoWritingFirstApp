@@ -17,7 +17,7 @@
     {% endif %}
 
     <a href="{% url 'logout' %}" style="float: right;">Logout</a>
-    <a href="{% url 'create' %}">Create new Question</a>
+    <a href="{% url 'create' count_of_choices%}">Create new Question</a>
 
     <p>Available Questions for votes</p>
     {% if open_questions %}

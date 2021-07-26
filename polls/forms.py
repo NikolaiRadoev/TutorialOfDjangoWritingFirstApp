@@ -1,8 +1,10 @@
 from django import forms
 from django.db import transaction
-from .models import Question, User, Answer
+from .models import Question, User, Answer, Choice
 from django.utils.translation import gettext_lazy
 from django.forms import ModelForm
+from django.forms import formset_factory, inlineformset_factory
+from django.utils import timezone
 
 
 class QuestionChoiceForm(forms.Form):
@@ -48,8 +50,11 @@ class QuestionChoiceForm(forms.Form):
 
 class CreateNewQuestionForm(forms.Form):
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        # self.q = object
+        self.formset = kwargs.pop("formset")
         super().__init__(*args, **kwargs)
-        self.fields["question_text"] = forms.CharField(label='Name of the question',
+        """self.fields["question_text"] = forms.CharField(label='Name of the question',
                                                        max_length=100,
                                                        widget=forms.TextInput(
                                                            attrs={'placeholder': 'Enter question name'}))
@@ -63,7 +68,33 @@ class CreateNewQuestionForm(forms.Form):
         self.fields["choice_three"] = forms.CharField(label="Name of choice",
                                                       max_length=100,
                                                       required=None,
-                                                      widget=forms.TextInput(attrs={'placeholder': 'Enter your choice'}))
+                                                      widget=forms.TextInput(attrs={'placeholder': 'Enter your choice'}))"""
+        self.fields["question_text"] = forms.CharField(label='Name of the question',
+                                                       max_length=100,
+                                                       widget=forms.TextInput(
+                                                           attrs={'placeholder': 'Enter question name'}))
+        # self.fields["count_of_choices"] = forms.IntegerField(min_value=1, max_value=12, initial=1)
+
+        # self.fields["choice_text"] = forms.CharField(max_length=100)
+
+    def clean(self):
+        cleaned_data = super(CreateNewQuestionForm, self).clean()
+        return cleaned_data
+
+    def save(self):
+        question_text = self.cleaned_data["question_text"]
+        q = Question(user=self.user, question_text=question_text, pub_date=timezone.now())
+        q.save()
+        for form in self.formset:
+            q.choice_set.create(choice_text=form.fields["choice"], votes=0)
+
+
+class SetChoiceText(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["choice"] = forms.CharField(label='Name of Choice', max_length=100,
+                                                widget=forms.TextInput(
+                                                           attrs={'placeholder': 'Enter choice'}))
 
 
 class LoginUserForm(ModelForm):

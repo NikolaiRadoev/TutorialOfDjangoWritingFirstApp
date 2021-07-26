@@ -8,8 +8,9 @@ from django.template import loader
 from django.utils import timezone
 
 from .models import Question, User, Answer
-from .forms import QuestionChoiceForm, CreateNewQuestionForm, LoginUserForm, RegisterUserForm
+from .forms import QuestionChoiceForm, CreateNewQuestionForm, LoginUserForm, RegisterUserForm, SetChoiceText
 from django.views import generic
+from django.forms import formset_factory, inlineformset_factory
 
 
 def get_session_user(request):
@@ -70,10 +71,14 @@ def detail(request, question_id):
     )
 
 
-def create(request):
+def create(request, count_of_choices):
     user = get_session_user(request)
 
-    form = CreateNewQuestionForm(request.POST or None)
+    Choice_form = formset_factory(SetChoiceText, extra=count_of_choices)
+    choice_form = Choice_form()
+    form = CreateNewQuestionForm(request.POST or None, user=user, formset=choice_form)
+    cfcp = count_of_choices + 1 if count_of_choices < 12 else count_of_choices
+    cfcm = count_of_choices - 1 if count_of_choices > 1 else count_of_choices
 
     if request.method == "POST":
         if form.is_valid():
@@ -82,7 +87,7 @@ def create(request):
             choice_two_input = request.POST["choice_two"]
             choice_three_input = request.POST["choice_three"]"""
 
-            question_text_input = form.cleaned_data["question_text"]
+            """question_text_input = form.cleaned_data["question_text"]
             choice_one_input = form.cleaned_data["choice_one"]
             choice_two_input = form.cleaned_data["choice_two"]
             choice_three_input = form.cleaned_data["choice_three"]
@@ -97,9 +102,20 @@ def create(request):
             if choice_three_input:
                 q.choice_set.create(choice_text=choice_three_input, votes=0)
 
-            return HttpResponseRedirect(reverse("home"))
+            return HttpResponseRedirect(reverse("home"))"""
 
-    return render(request, "polls/create.html", {"user": user, "form": form})
+            try:
+                form.save()
+                messages.success(request, 'New Question Cool')
+                return redirect("home")
+            except forms.ValidationError as e:
+                form.add_error(e)
+
+    return render(request, "polls/create.html", {"user": user, "form": form, 'choice_form': choice_form,
+                                                 "count_of_choices": count_of_choices,
+                                                 "count_of_choices_plus": cfcp,
+                                                 "count_of_choices_minus": cfcm,
+                                                 })
 
 
 # User
@@ -212,6 +228,7 @@ def home(request):
             "user": user,
             "user_answers": user_answers,
             "open_questions": open_questions,
+            "count_of_choices": 1,
         },
     )
 
