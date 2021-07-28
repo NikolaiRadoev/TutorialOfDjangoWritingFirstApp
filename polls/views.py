@@ -75,41 +75,47 @@ def create(request, count_of_choices):
     user = get_session_user(request)
 
     Choice_form = formset_factory(SetChoiceText, extra=count_of_choices)
-    choice_form = Choice_form()
+    choice_form = Choice_form(request.POST or None)
     form = CreateNewQuestionForm(request.POST or None, user=user, formset=choice_form)
+    #  (cfcp/cfcm)count of choices plus/minus
     cfcp = count_of_choices + 1 if count_of_choices < 12 else count_of_choices
     cfcm = count_of_choices - 1 if count_of_choices > 1 else count_of_choices
 
     if request.method == "POST":
-        if form.is_valid():
-            """question_text_input = request.POST["question_text"]
-            choice_one_input = request.POST["choice_one"]
-            choice_two_input = request.POST["choice_two"]
-            choice_three_input = request.POST["choice_three"]"""
+        if choice_form.is_valid():
+            # for cf in choice_form:
+                # if cf.is_valid():
+            cf_cleaned_data = choice_form.cleaned_data
+            if form.is_valid():
 
-            """question_text_input = form.cleaned_data["question_text"]
-            choice_one_input = form.cleaned_data["choice_one"]
-            choice_two_input = form.cleaned_data["choice_two"]
-            choice_three_input = form.cleaned_data["choice_three"]
+                """question_text_input = request.POST["question_text"]
+                choice_one_input = request.POST["choice_one"]
+                choice_two_input = request.POST["choice_two"]
+                choice_three_input = request.POST["choice_three"]"""
 
-            q = Question(
-                user=user, question_text=question_text_input, pub_date=timezone.now()
-            )
-            q.save()
-            q.choice_set.create(choice_text=choice_one_input, votes=0)
-            if choice_two_input:
-                q.choice_set.create(choice_text=choice_two_input, votes=0)
-            if choice_three_input:
-                q.choice_set.create(choice_text=choice_three_input, votes=0)
+                """question_text_input = form.cleaned_data["question_text"]
+                choice_one_input = form.cleaned_data["choice_one"]
+                choice_two_input = form.cleaned_data["choice_two"]
+                choice_three_input = form.cleaned_data["choice_three"]
+            
+                q = Question(
+                    user=user, question_text=question_text_input, pub_date=timezone.now()
+                )
+                q.save()
+                q.choice_set.create(choice_text=choice_one_input, votes=0)
+                if choice_two_input:
+                    q.choice_set.create(choice_text=choice_two_input, votes=0)
+                if choice_three_input:
+                    q.choice_set.create(choice_text=choice_three_input, votes=0)
+            
+                return HttpResponseRedirect(reverse("home"))"""
 
-            return HttpResponseRedirect(reverse("home"))"""
-
-            try:
-                form.save()
-                messages.success(request, 'New Question Cool')
-                return redirect("home")
-            except forms.ValidationError as e:
-                form.add_error(e)
+                try:
+                    form.save(cf_cleaned_data)
+                    messages.success(request, 'New Question Cool')
+                    return redirect("home")
+                except forms.ValidationError as e:
+                    form.add_error(e)
 
     return render(request, "polls/create.html", {"user": user, "form": form, 'choice_form': choice_form,
                                                  "count_of_choices": count_of_choices,

@@ -15,6 +15,7 @@ class QuestionChoiceForm(forms.Form):
         super().__init__(*args, **kwargs)
         # self.fields["insert_1"] = forms.CharField()
         self.fields["choice_id"] = forms.ChoiceField(
+            label='Please select one choice',
             widget=forms.RadioSelect,
             choices=[(choice.id, str(choice)) for choice in self.question.choice_set.all()],
         )
@@ -81,17 +82,24 @@ class CreateNewQuestionForm(forms.Form):
         cleaned_data = super(CreateNewQuestionForm, self).clean()
         return cleaned_data
 
-    def save(self):
-        question_text = self.cleaned_data["question_text"]
-        q = Question(user=self.user, question_text=question_text, pub_date=timezone.now())
-        q.save()
-        for form in self.formset:
-            q.choice_set.create(choice_text=form.fields["choice"], votes=0)
+    def save(self, cf_cleaned_data):
+        try:
+            with transaction.atomic():
+                question_text = self.cleaned_data["question_text"]
+                q = Question(user=self.user, question_text=question_text, pub_date=timezone.now())
+                q.save()
+                """for form in self.formset:
+                    q.choice_set.create(choice_text=form.fields["choice"], votes=0)"""
+                for f in cf_cleaned_data:
+                    q.choice_set.create(choice_text=f["choice"], votes=0)
+        except Exception as e:
+            raise forms.ValidationError({None: "An Unexpected error %s " % e})
 
 
 class SetChoiceText(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.empty_permitted = False  # For make all fields required
         self.fields["choice"] = forms.CharField(label='Name of Choice', max_length=100,
                                                 widget=forms.TextInput(
                                                            attrs={'placeholder': 'Enter choice'}))

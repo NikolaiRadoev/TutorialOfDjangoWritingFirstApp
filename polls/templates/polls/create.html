@@ -4,7 +4,7 @@
 
 {% block content %}
         <h1>Create new question</h1>
-    <form action="{% url 'create' count_of_choices %}" method="post">{% csrf_token %}
+    <form action="{% url 'create' count_of_choices %}" method="post" id="create">{% csrf_token %}
     {{form.as_ul}}
     {{choice_form.as_ul}}
     <!--<input type="text" name="question_text" id="question_text" placeholder="Enter name of your question" required>
