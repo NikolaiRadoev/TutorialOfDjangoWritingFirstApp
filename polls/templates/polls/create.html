@@ -5,7 +5,10 @@
 {% block content %}
         <h1>Create new question</h1>
     <form action="{% url 'create' count_of_choices %}" method="post" id="create">{% csrf_token %}
+    <input type="submit" name="btn_plus" value="Add more choices">
+    <input type="submit" name="btn_minus" value="Remove last choice">
     {{form.as_ul}}
+        <!--{{ choice_form.management_form }}-->
     {{choice_form.as_ul}}
     <!--<input type="text" name="question_text" id="question_text" placeholder="Enter name of your question" required>
         <br>
@@ -21,6 +24,7 @@
         <br>-->
             <a href="{% url 'create' count_of_choices_plus%}">Add choices</a>
             <a href="{% url 'create' count_of_choices_minus%}">Remove choices</a>
-    <input type="submit" value="Create">
+
+    <input type="submit" name="create" value="Create">
 </form>
 {% endblock content %}

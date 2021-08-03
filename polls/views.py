@@ -11,6 +11,7 @@ from .models import Question, User, Answer
 from .forms import QuestionChoiceForm, CreateNewQuestionForm, LoginUserForm, RegisterUserForm, SetChoiceText
 from django.views import generic
 from django.forms import formset_factory, inlineformset_factory
+from functools import partial, wraps
 
 
 def get_session_user(request):
@@ -74,18 +75,22 @@ def detail(request, question_id):
 def create(request, count_of_choices):
     user = get_session_user(request)
 
+    # Choice_form = formset_factory(wraps(SetChoiceText)(partial(SetChoiceText)), extra=count_of_choices)
     Choice_form = formset_factory(SetChoiceText, extra=count_of_choices)
     choice_form = Choice_form(request.POST or None)
     form = CreateNewQuestionForm(request.POST or None, user=user, formset=choice_form)
     #  (cfcp/cfcm)count of choices plus/minus
     cfcp = count_of_choices + 1 if count_of_choices < 12 else count_of_choices
     cfcm = count_of_choices - 1 if count_of_choices > 1 else count_of_choices
+    # list = []
 
     if request.method == "POST":
+
         if choice_form.is_valid():
             # for cf in choice_form:
                 # if cf.is_valid():
             cf_cleaned_data = choice_form.cleaned_data
+
             if form.is_valid():
 
                 """question_text_input = request.POST["question_text"]
@@ -109,11 +114,28 @@ def create(request, count_of_choices):
                     q.choice_set.create(choice_text=choice_three_input, votes=0)
             
                 return HttpResponseRedirect(reverse("home"))"""
+                if request.POST.get("btn_plus"):
+                    # count_of_choices += 1
+                    # return HttpResponseRedirect(reverse('create', args=(count_of_choices,)))
+                    # return redirect(reverse('create', args=(count_of_choices,)))
+
+                    # for i in range(0, int(choice_form.data['form-TOTAL_FORMS'])):
+                    #    list.append({'form-%s-choice' % i: choice_form.data['form-%s-choice' % i]})
+                    # assert False, form.data
+                    # form = CreateNewQuestionForm(initial={'question_text': form.data['question_text']}, user=user, formset=choice_form)
+                    choice_form = Choice_form(initial=cf_cleaned_data)
+
+                if request.POST.get("btn_minus"):
+                    # count_of_choices = "-1"
+                    # cf_cleaned_data.pop()
+                    Choice_form = formset_factory(SetChoiceText, extra=-1)
+                    choice_form = Choice_form(initial=cf_cleaned_data)
 
                 try:
-                    form.save(cf_cleaned_data)
-                    messages.success(request, 'New Question Cool')
-                    return redirect("home")
+                    if request.POST.get("create"):
+                        form.save(cf_cleaned_data)
+                        messages.success(request, 'New Question Cool')
+                        return redirect("home")
                 except forms.ValidationError as e:
                     form.add_error(e)
 
