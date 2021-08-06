@@ -96,6 +96,38 @@ class CreateNewQuestionForm(forms.Form):
             raise forms.ValidationError({None: "An Unexpected error %s " % e})
 
 
+class EditQuestionForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        self.question = kwargs.pop("question")
+        self.formset = kwargs.pop("formset")
+        super().__init__(*args, **kwargs)
+        self.fields["question_text"] = forms.CharField(label='Name of the question',
+                                                       initial=self.question,
+                                                       max_length=100,
+                                                       widget=forms.TextInput(
+                                                           attrs={'placeholder': 'Enter question name'}))
+
+    def clean(self):
+        cleaned_data = super(EditQuestionForm, self).clean()
+        return cleaned_data
+
+    def save(self, cf_cleaned_data):
+        try:
+            with transaction.atomic():
+                question_text = self.cleaned_data["question_text"]
+                self.question.question_text = question_text
+                self.question.save()
+
+                n = self.question.choice_set.all()
+                n.delete()
+                for f in cf_cleaned_data:
+                    self.question.choice_set.create(choice_text=f["choice"], votes=0)
+
+        except Exception as e:
+            raise forms.ValidationError({None: "An Unexpected error %s " % e})
+
+
 class SetChoiceText(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

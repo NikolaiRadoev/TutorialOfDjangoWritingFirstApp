@@ -8,7 +8,7 @@ from django.template import loader
 from django.utils import timezone
 
 from .models import Question, User, Answer
-from .forms import QuestionChoiceForm, CreateNewQuestionForm, LoginUserForm, RegisterUserForm, SetChoiceText
+from .forms import QuestionChoiceForm, CreateNewQuestionForm, LoginUserForm, RegisterUserForm, SetChoiceText, EditQuestionForm
 from django.views import generic
 from django.forms import formset_factory, inlineformset_factory
 from functools import partial, wraps
@@ -88,7 +88,7 @@ def create(request, count_of_choices):
 
         if choice_form.is_valid():
             # for cf in choice_form:
-                # if cf.is_valid():
+            # if cf.is_valid():
             cf_cleaned_data = choice_form.cleaned_data
 
             if form.is_valid():
@@ -144,6 +144,48 @@ def create(request, count_of_choices):
                                                  "count_of_choices_plus": cfcp,
                                                  "count_of_choices_minus": cfcm,
                                                  })
+
+
+def edit(request, question_id):
+    user = get_session_user(request)
+    question = get_object_or_404(Question, id=question_id) if question_id > 0 else None
+    my_questions = list(user.question_set.all())
+    initial_list = []
+
+    if question_id > 0:
+        for choice in question.choice_set.all():
+            initial_list.append({'choice': choice})
+        # assert False, initial_list
+        Choice_form = formset_factory(SetChoiceText, extra=0)
+        choice_form = Choice_form(request.POST or None, initial=initial_list)
+        form = EditQuestionForm(request.POST or None, user=user, question=question, formset=choice_form)
+
+        if request.method == "POST":
+
+            if choice_form.is_valid():
+                cf_cleaned_data = choice_form.cleaned_data
+
+                if form.is_valid():
+                    if request.POST.get("btn_plus"):
+                        Choice_form = formset_factory(SetChoiceText, extra=1)
+                        choice_form = Choice_form(initial=cf_cleaned_data)
+
+                    if request.POST.get("btn_minus"):
+                        Choice_form = formset_factory(SetChoiceText, extra=-1)
+                        choice_form = Choice_form(initial=cf_cleaned_data)
+
+                    try:
+                        if request.POST.get("edit"):
+                            form.save(cf_cleaned_data)
+                            messages.success(request, 'Edit is successful')
+                            return redirect("home")
+                    except forms.ValidationError as e:
+                        form.add_error(e)
+
+    else:
+        form = None
+        choice_form = None
+    return render(request, "polls/edit.html", {"my_questions": my_questions, "question": question, "form": form, "choice_form": choice_form})
 
 
 # User
@@ -245,8 +287,8 @@ def home(request):
     user_answers = list(user.answer_set.all())
     open_questions = (
         Question.objects.filter(pub_date__lte=timezone.now())
-        .exclude(answer__user_id=user)
-        .order_by("-pub_date")
+            .exclude(answer__user_id=user)
+            .order_by("-pub_date")
     )
 
     return render(
