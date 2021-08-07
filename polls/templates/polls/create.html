@@ -3,28 +3,19 @@
 {% block title %} Create new question{% endblock title%}
 
 {% block content %}
-        <h1>Create new question</h1>
-    <form action="{% url 'create' count_of_choices %}" method="post" id="create">{% csrf_token %}
-    <input type="submit" name="btn_plus" value="Add more choices">
-    <input type="submit" name="btn_minus" value="Remove last choice">
-    {{form.as_ul}}
-        <!--{{ choice_form.management_form }}-->
-    {{choice_form.as_ul}}
-    <!--<input type="text" name="question_text" id="question_text" placeholder="Enter name of your question" required>
-        <br>
-        <br>
-    <input type="text" name="choice_one" id="choice_one" placeholder="Enter your choice" required>
-        <br>
-        <br>
-    <input type="text" name="choice_two" id="choice_two" placeholder="Enter your choice">
-        <br>
-        <br>
-    <input type="text" name="choice_three" id="choice_three" placeholder="Enter your choice">
-        <br>
-        <br>-->
-            <a href="{% url 'create' count_of_choices_plus%}">Add choices</a>
-            <a href="{% url 'create' count_of_choices_minus%}">Remove choices</a>
+    <h1>Create new question</h1>
+    <form method="post">
+        {% csrf_token %}
 
-    <input type="submit" name="create" value="Create">
-</form>
+        {{ form.as_ul }}
+
+        {{ choice_formset }}
+
+        <hr>
+
+        <button type="submit" name="form-TOTAL_FORMS" value="{{next_extra}}">Add Choice</button>
+        <button type="submit" name="form-TOTAL_FORMS" value="{{prev_extra}}">Remove Choice</button>
+
+        <input type="submit" name="create" value="Create">
+    </form>
 {% endblock content %}

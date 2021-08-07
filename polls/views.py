@@ -1,17 +1,24 @@
 from django.shortcuts import get_object_or_404, render, redirect
+from django import forms
 from django.db import transaction
 from django.contrib import messages
-from django.http import Http404
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.template import loader
 from django.utils import timezone
 
 from .models import Question, User, Answer
-from .forms import QuestionChoiceForm, CreateNewQuestionForm, LoginUserForm, RegisterUserForm, SetChoiceText, EditQuestionForm
+from .forms import (
+    QuestionChoiceForm,
+    CreateNewQuestionForm,
+    LoginUserForm,
+    RegisterUserForm,
+    SetChoiceText,
+    ChoiceFormSetBase,
+    EditQuestionForm,
+)
 from django.views import generic
-from django.forms import formset_factory, inlineformset_factory
-from functools import partial, wraps
+from django.forms import formset_factory
 
 
 def get_session_user(request):
@@ -38,31 +45,9 @@ def detail(request, question_id):
 
     if request.method == "POST":
         if form.is_valid():
-            """choice_id = form.cleaned_data["choice"]
-
-            try:
-                selected_choice = question.choice_set.get(pk=choice_id)
-            except Exception:
-                messages.error(request, "Choice not found")
-            else:
-                try:
-                    with transaction.atomic():
-                        selected_choice.votes += 1
-                        selected_choice.save()
-                        answer = Answer(
-                            user_id=user,
-                            is_vote=True,
-                            choice_text=selected_choice,
-                            question_text=question,
-                        )
-                        answer.save()
-                    messages.success(request, "Nice")
-                    return redirect("home")
-                except Exception as e:
-                    messages.error(request, "Unexpected error: %s" % e)"""
             try:
                 form.save()
-                messages.success(request, 'Nice')
+                messages.success(request, "Nice")
                 return redirect("home")
             except forms.ValidationError as e:
                 form.add_error(e)
@@ -72,120 +57,117 @@ def detail(request, question_id):
     )
 
 
-def create(request, count_of_choices):
+def create(request):
     user = get_session_user(request)
 
-    # Choice_form = formset_factory(wraps(SetChoiceText)(partial(SetChoiceText)), extra=count_of_choices)
-    Choice_form = formset_factory(SetChoiceText, extra=count_of_choices)
-    choice_form = Choice_form(request.POST or None)
-    form = CreateNewQuestionForm(request.POST or None, user=user, formset=choice_form)
-    #  (cfcp/cfcm)count of choices plus/minus
-    cfcp = count_of_choices + 1 if count_of_choices < 12 else count_of_choices
-    cfcm = count_of_choices - 1 if count_of_choices > 1 else count_of_choices
-    # list = []
+    extra = 2
 
     if request.method == "POST":
+        extra = int(request.POST["form-TOTAL_FORMS"])
 
-        if choice_form.is_valid():
-            # for cf in choice_form:
-            # if cf.is_valid():
-            cf_cleaned_data = choice_form.cleaned_data
+    next_extra = extra + 1
+    prev_extra = extra - 1 if extra > 2 else 2
 
-            if form.is_valid():
+    ChoiceFormSet = formset_factory(
+        SetChoiceText, formset=ChoiceFormSetBase, extra=extra, max_num=10
+    )
+    choice_formset = ChoiceFormSet(request.POST or None)
 
-                """question_text_input = request.POST["question_text"]
-                choice_one_input = request.POST["choice_one"]
-                choice_two_input = request.POST["choice_two"]
-                choice_three_input = request.POST["choice_three"]"""
-
-                """question_text_input = form.cleaned_data["question_text"]
-                choice_one_input = form.cleaned_data["choice_one"]
-                choice_two_input = form.cleaned_data["choice_two"]
-                choice_three_input = form.cleaned_data["choice_three"]
-            
-                q = Question(
-                    user=user, question_text=question_text_input, pub_date=timezone.now()
-                )
-                q.save()
-                q.choice_set.create(choice_text=choice_one_input, votes=0)
-                if choice_two_input:
-                    q.choice_set.create(choice_text=choice_two_input, votes=0)
-                if choice_three_input:
-                    q.choice_set.create(choice_text=choice_three_input, votes=0)
-            
-                return HttpResponseRedirect(reverse("home"))"""
-                if request.POST.get("btn_plus"):
-                    # count_of_choices += 1
-                    # return HttpResponseRedirect(reverse('create', args=(count_of_choices,)))
-                    # return redirect(reverse('create', args=(count_of_choices,)))
-
-                    # for i in range(0, int(choice_form.data['form-TOTAL_FORMS'])):
-                    #    list.append({'form-%s-choice' % i: choice_form.data['form-%s-choice' % i]})
-                    # assert False, form.data
-                    # form = CreateNewQuestionForm(initial={'question_text': form.data['question_text']}, user=user, formset=choice_form)
-                    choice_form = Choice_form(initial=cf_cleaned_data)
-
-                if request.POST.get("btn_minus"):
-                    # count_of_choices = "-1"
-                    # cf_cleaned_data.pop()
-                    Choice_form = formset_factory(SetChoiceText, extra=-1)
-                    choice_form = Choice_form(initial=cf_cleaned_data)
-
+    form = CreateNewQuestionForm(request.POST or None, user=user)
+    if request.method == "POST":
+        if request.POST.get("create"):
+            # validate the input
+            # no +/- buttom has been pressed
+            if form.is_valid() and choice_formset.is_valid():
                 try:
-                    if request.POST.get("create"):
-                        form.save(cf_cleaned_data)
-                        messages.success(request, 'New Question Cool')
+                    with transaction.atomic():
+                        question = form.save()
+                        for choice_form in choice_formset.forms:
+                            choice_form.save(question)
+                        messages.success(request, "New Question Cool")
                         return redirect("home")
-                except forms.ValidationError as e:
-                    form.add_error(e)
+                except Exception as e:
+                    messages.error(request, "Something Went wrong: %s" % e)
 
-    return render(request, "polls/create.html", {"user": user, "form": form, 'choice_form': choice_form,
-                                                 "count_of_choices": count_of_choices,
-                                                 "count_of_choices_plus": cfcp,
-                                                 "count_of_choices_minus": cfcm,
-                                                 })
+    return render(
+        request,
+        "polls/create.html",
+        {
+            "user": user,
+            "form": form,
+            "extra": extra,
+            "next_extra": next_extra,
+            "prev_extra": prev_extra,
+            "choice_formset": choice_formset,
+        },
+    )
+
+
+def my_questions(request):
+    user = get_session_user(request)
+
+    my_questions = list(user.question_set.all())
+
+    return render(
+        request,
+        "polls/edit.html",
+        {
+            "my_questions": my_questions,
+        },
+    )
 
 
 def edit(request, question_id):
     user = get_session_user(request)
-    question = get_object_or_404(Question, id=question_id) if question_id > 0 else None
+
+    question = get_object_or_404(Question, id=question_id)
+
+    if not question.user_id == user.id:
+        raise ValueError("Not your question")
+
+    extra = 0
+    inital = question.choice_set.count()
+
+    if request.method == "POST":
+        extra = int(request.POST["form-TOTAL_FORMS"]) - inital
+
+    next_extra = inital + (extra + 1)
+    prev_extra = inital + (extra - 1 if extra >= 1 else 0)
+
+    ChoiceFormSet = formset_factory(
+        SetChoiceText, formset=ChoiceFormSetBase, extra=extra, can_delete=True
+    )
+    choice_formset = ChoiceFormSet(
+        request.POST or None,
+        initial=[
+            {"id": choice.id, "choice_text": choice.choice_text}
+            for choice in question.choice_set.all()
+        ],
+    )
+    form = EditQuestionForm(request.POST or None, user=user, question=question)
+
+    if request.method == "POST":
+        if request.POST.get("edit"):
+            if form.is_valid() and choice_formset.is_valid():
+                form.save()
+                choice_formset.save(question)
+                messages.success(request, "Edit is successful")
+                return redirect(request.build_absolute_uri())
+
     my_questions = list(user.question_set.all())
-    initial_list = []
 
-    if question_id > 0:
-        for choice in question.choice_set.all():
-            initial_list.append({'choice': choice})
-        # assert False, initial_list
-        Choice_form = formset_factory(SetChoiceText, extra=0)
-        choice_form = Choice_form(request.POST or None, initial=initial_list)
-        form = EditQuestionForm(request.POST or None, user=user, question=question, formset=choice_form)
-
-        if request.method == "POST":
-
-            if choice_form.is_valid():
-                cf_cleaned_data = choice_form.cleaned_data
-
-                if form.is_valid():
-                    if request.POST.get("btn_plus"):
-                        Choice_form = formset_factory(SetChoiceText, extra=1)
-                        choice_form = Choice_form(initial=cf_cleaned_data)
-
-                    if request.POST.get("btn_minus"):
-                        Choice_form = formset_factory(SetChoiceText, extra=-1)
-                        choice_form = Choice_form(initial=cf_cleaned_data)
-
-                    try:
-                        if request.POST.get("edit"):
-                            form.save(cf_cleaned_data)
-                            messages.success(request, 'Edit is successful')
-                            return redirect("home")
-                    except forms.ValidationError as e:
-                        form.add_error(e)
-
-    else:
-        form = None
-        choice_form = None
-    return render(request, "polls/edit.html", {"my_questions": my_questions, "question": question, "form": form, "choice_form": choice_form})
+    return render(
+        request,
+        "polls/edit.html",
+        {
+            "form": form,
+            "question": question,
+            "my_questions": my_questions,
+            "choice_formset": choice_formset,
+            "next_extra": next_extra,
+            "prev_extra": prev_extra,
+        },
+    )
 
 
 # User
@@ -195,48 +177,46 @@ def register(request):
     if request.method == "POST":
         if form.is_valid():
             """try:
-                # username_input = User.objects.choice_set.get(pk=request.GET['username'])
-                # password_input = User.objects.choice_set.get(pk=request.POST['password'])
-                # user_email_input = User.objects.choice_set.get(pk=request.POST['user_email'])
-                username_input = form.cleaned_data["username"]
-                password_input = form.cleaned_data["password"]
-                user_email_input = form.cleaned_data["email"]
-            except (KeyError, User.DoesNotExist):
-                return render(request, "polls/register.html", {"form": form})
-            # return render(request, 'polls/home.html')
-            try:
-                u = User.objects.get(user_email=user_email_input)
+                        # username_input = User.objects.choice_set.get(pk=request.GET['username'])
+                        # password_input = User.objects.choice_set.get(pk=request.POST['password'])
+                        # user_email_input = User.objects.choice_set.get(pk=request.POST['user_email'])
+                        username_input = form.cleaned_data["username"]
+                        password_input = form.cleaned_data["password"]
+                        user_email_input = form.cleaned_data["email"]
+                    except (KeyError, User.DoesNotExist):
+                        return render(request, "polls/register.html", {"form": form})
+                    # return render(request, 'polls/home.html')
+                    try:
+                        u = User.objects.get(user_email=user_email_input)
+                        return render(
+                            request,
+                            "polls/register.html",
+                            {"error_message": "This email is taken Try another", "form": form},
+                        )
+                    except (KeyError, User.DoesNotExist):
+                        user = User(
+                            username=username_input,
+                            password=password_input,
+                            user_email=user_email_input,
+                            is_active=True,
+                        )
+                        user.save()
+                        request.session["user_id"] = user.id
+                        return HttpResponseRedirect(reverse("home"))
+            else:
                 return render(
                     request,
                     "polls/register.html",
-                    {"error_message": "This email is taken Try another", "form": form},
-                )
-            except (KeyError, User.DoesNotExist):
-                user = User(
-                    username=username_input,
-                    password=password_input,
-                    user_email=user_email_input,
-                    is_active=True,
-                )
-                user.save()
-                request.session["user_id"] = user.id
-                return HttpResponseRedirect(reverse("home"))
-    else:
-        return render(
-            request,
-            "polls/register.html",
-            {"form": form}
-        )"""
+                    {"form": form}
+                )"""
             try:
                 form.save(request)
-                messages.success(request, 'Your registration is Successful')
+                messages.success(request, "Your registration is Successful")
                 return redirect("home")
             except forms.ValidationError as e:
                 form.add_error(e)
 
-    return render(
-        request, "polls/register.html", {"form": form}
-    )
+    return render(request, "polls/register.html", {"form": form})
 
 
 def login(request):
@@ -244,41 +224,39 @@ def login(request):
     if request.method == "POST":
         if form.is_valid():
             """user_email_input = form.cleaned_data["email"]
-            password_input = form.cleaned_data["password"]
+                    password_input = form.cleaned_data["password"]
 
-            try:
-                # user = get_object_or_404(User, user_email=user_email_input)
-                user = User.objects.get(user_email=user_email_input)
-                if user.password == password_input:
-                    request.session["user_id"] = user.id
-                    user.save()
-                    # return render(request, 'polls/home.html', {'form': form})
-                    return HttpResponseRedirect(reverse("home"))
-                else:
-                    return render(
-                        request,
-                        "polls/login.html",
-                        {"error_message": "Can't find user with this email",
-                         "form": form},
-                    )
-            except (KeyError, User.DoesNotExist):
-                return render(request, "polls/login.html", {"error_message": "Login failed", "form": form})
-    else:
-        return render(
-            request,
-            "polls/login.html",
-            {"error_message": "Problem with login", "form": form},
-        )"""
+                    try:
+                        # user = get_object_or_404(User, user_email=user_email_input)
+                        user = User.objects.get(user_email=user_email_input)
+                        if user.password == password_input:
+                            request.session["user_id"] = user.id
+                            user.save()
+                            # return render(request, 'polls/home.html', {'form': form})
+                            return HttpResponseRedirect(reverse("home"))
+                        else:
+                            return render(
+                                request,
+                                "polls/login.html",
+                                {"error_message": "Can't find user with this email",
+                                 "form": form},
+                            )
+                    except (KeyError, User.DoesNotExist):
+                        return render(request, "polls/login.html", {"error_message": "Login failed", "form": form})
+            else:
+                return render(
+                    request,
+                    "polls/login.html",
+                    {"error_message": "Problem with login", "form": form},
+                )"""
             try:
                 form.save(request)
-                messages.success(request, 'Welcome back')
+                messages.success(request, "Welcome back")
                 return redirect("home")
             except forms.ValidationError as e:
                 form.add_error(e)
 
-    return render(
-        request, "polls/login.html", {"form": form}
-    )
+    return render(request, "polls/login.html", {"form": form})
 
 
 def home(request):
@@ -287,8 +265,8 @@ def home(request):
     user_answers = list(user.answer_set.all())
     open_questions = (
         Question.objects.filter(pub_date__lte=timezone.now())
-            .exclude(answer__user_id=user)
-            .order_by("-pub_date")
+        .exclude(answer__user_id=user)
+        .order_by("-pub_date")
     )
 
     return render(

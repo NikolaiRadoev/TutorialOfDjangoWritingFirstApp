@@ -8,16 +8,17 @@ from django.utils import timezone
 
 
 class QuestionChoiceForm(forms.Form):
-
     def __init__(self, *args, **kwargs):
         self.question = kwargs.pop("question")
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
         # self.fields["insert_1"] = forms.CharField()
         self.fields["choice_id"] = forms.ChoiceField(
-            label='Please select one choice',
+            label="Please select one choice",
             widget=forms.RadioSelect,
-            choices=[(choice.id, str(choice)) for choice in self.question.choice_set.all()],
+            choices=[
+                (choice.id, str(choice)) for choice in self.question.choice_set.all()
+            ],
         )
 
     """def clean_insert_1(self):
@@ -25,6 +26,7 @@ class QuestionChoiceForm(forms.Form):
             raise forms.ValidationError("You have forgotten 1!")
 
         return self.cleaned_data["insert_1"]"""
+
     def clean(self):
         cleaned_data = super(QuestionChoiceForm, self).clean()
         choice_id = cleaned_data["choice_id"]
@@ -43,7 +45,12 @@ class QuestionChoiceForm(forms.Form):
                 selected_choice = self.cleaned_data["selected_choice"]
                 selected_choice.votes += 1
                 selected_choice.save()
-                answer = Answer(user_id=self.user, is_vote=True, choice_text=selected_choice, question_text=self.question)
+                answer = Answer(
+                    user_id=self.user,
+                    is_vote=True,
+                    choice_text=selected_choice,
+                    question_text=self.question,
+                )
                 answer.save()
         except Exception as e:
             raise forms.ValidationError({None: "An Unexpected error %s " % e})
@@ -52,28 +59,12 @@ class QuestionChoiceForm(forms.Form):
 class CreateNewQuestionForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
-        # self.q = object
-        self.formset = kwargs.pop("formset")
         super().__init__(*args, **kwargs)
-        """self.fields["question_text"] = forms.CharField(label='Name of the question',
-                                                       max_length=100,
-                                                       widget=forms.TextInput(
-                                                           attrs={'placeholder': 'Enter question name'}))
-        self.fields["choice_one"] = forms.CharField(label='Name of choice',
-                                                    widget=forms.TextInput(attrs={'placeholder': 'Enter your choice'}),
-                                                    max_length=100)
-        self.fields["choice_two"] = forms.CharField(label="Name of choice",
-                                                    max_length=100,
-                                                    required=None,
-                                                    widget=forms.TextInput(attrs={'placeholder': 'Enter your choice'}))
-        self.fields["choice_three"] = forms.CharField(label="Name of choice",
-                                                      max_length=100,
-                                                      required=None,
-                                                      widget=forms.TextInput(attrs={'placeholder': 'Enter your choice'}))"""
-        self.fields["question_text"] = forms.CharField(label='Name of the question',
-                                                       max_length=100,
-                                                       widget=forms.TextInput(
-                                                           attrs={'placeholder': 'Enter question name'}))
+        self.fields["question_text"] = forms.CharField(
+            label="Name of the question",
+            max_length=100,
+            widget=forms.TextInput(attrs={"placeholder": "Enter question name"}),
+        )
         # self.fields["count_of_choices"] = forms.IntegerField(min_value=1, max_value=12, initial=1)
 
         # self.fields["choice_text"] = forms.CharField(max_length=100)
@@ -82,77 +73,84 @@ class CreateNewQuestionForm(forms.Form):
         cleaned_data = super(CreateNewQuestionForm, self).clean()
         return cleaned_data
 
-    def save(self, cf_cleaned_data):
-        try:
-            with transaction.atomic():
-                question_text = self.cleaned_data["question_text"]
-                q = Question(user=self.user, question_text=question_text, pub_date=timezone.now())
-                q.save()
-                """for form in self.formset:
-                    q.choice_set.create(choice_text=form.fields["choice"], votes=0)"""
-                for f in cf_cleaned_data:
-                    q.choice_set.create(choice_text=f["choice"], votes=0)
-        except Exception as e:
-            raise forms.ValidationError({None: "An Unexpected error %s " % e})
+    def save(self):
+        return self.user.question_set.create(
+            question_text=self.cleaned_data["question_text"], pub_date=timezone.now()
+        )
 
 
 class EditQuestionForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
         self.question = kwargs.pop("question")
-        self.formset = kwargs.pop("formset")
         super().__init__(*args, **kwargs)
-        self.fields["question_text"] = forms.CharField(label='Name of the question',
-                                                       initial=self.question,
-                                                       max_length=100,
-                                                       widget=forms.TextInput(
-                                                           attrs={'placeholder': 'Enter question name'}))
+        self.fields["question_text"] = forms.CharField(
+            label="Name of the question",
+            initial=self.question,
+            max_length=100,
+            widget=forms.TextInput(attrs={"placeholder": "Enter question name"}),
+        )
 
     def clean(self):
         cleaned_data = super(EditQuestionForm, self).clean()
         return cleaned_data
 
-    def save(self, cf_cleaned_data):
-        try:
-            with transaction.atomic():
-                question_text = self.cleaned_data["question_text"]
-                self.question.question_text = question_text
-                self.question.save()
-
-                n = self.question.choice_set.all()
-                n.delete()
-                for f in cf_cleaned_data:
-                    self.question.choice_set.create(choice_text=f["choice"], votes=0)
-
-        except Exception as e:
-            raise forms.ValidationError({None: "An Unexpected error %s " % e})
+    def save(self):
+        question_text = self.cleaned_data["question_text"]
+        self.question.question_text = question_text
+        self.question.save()
 
 
 class SetChoiceText(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.empty_permitted = False  # For make all fields required
-        self.fields["choice"] = forms.CharField(label='Name of Choice', max_length=100,
-                                                widget=forms.TextInput(
-                                                           attrs={'placeholder': 'Enter choice'}))
+        self.fields["id"] = forms.IntegerField(required=False, widget=forms.HiddenInput)
+        self.fields["choice_text"] = forms.CharField(
+            label="Name of Choice",
+            max_length=100,
+            widget=forms.TextInput(attrs={"placeholder": "Enter choice"}),
+        )
+
+    def save(self, question):
+        if self.cleaned_data.get("id"):
+            choice = question.choice_set.get(pk=self.cleaned_data["id"])
+            choice.choice_text = self.cleaned_data["choice_text"]
+            choice.save()
+        else:
+            question.choice_set.create(choice_text=self.cleaned_data["choice_text"])
+
+    def delete(self, question):
+        if self.cleaned_data.get("id"):
+            choice = question.choice_set.get(pk=self.cleaned_data["id"])
+            choice.delete()
+
+
+class ChoiceFormSetBase(forms.BaseFormSet):
+    def save(self, question):
+        for choice_form in self.forms:
+            if self._should_delete_form(choice_form):
+                choice_form.delete(question)
+            elif choice_form.has_changed():
+                choice_form.save(question)
 
 
 class LoginUserForm(ModelForm):
     """def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["email"] = forms.CharField(widget=forms.EmailInput(attrs={'placeholder': 'Enter your email'}),
-                                               max_length=100)
-        self.fields["password"] = forms.CharField(
-            widget=forms.PasswordInput(attrs={'placeholder': 'Enter your password'}),
-            max_length=100)"""
+    super().__init__(*args, **kwargs)
+    self.fields["email"] = forms.CharField(widget=forms.EmailInput(attrs={'placeholder': 'Enter your email'}),
+                                           max_length=100)
+    self.fields["password"] = forms.CharField(
+        widget=forms.PasswordInput(attrs={'placeholder': 'Enter your password'}),
+        max_length=100)"""
+
     class Meta:
         model = User
-        exclude = ['username', 'is_active']
-        labels = {'user_email': 'Email'}
+        exclude = ["username", "is_active"]
+        labels = {"user_email": "Email"}
         #  help_texts = {'user_email': 'Enter valid email address'}
         widgets = {
-            'password': forms.PasswordInput(),
-            'user_email': forms.EmailInput(),
+            "password": forms.PasswordInput(),
+            "user_email": forms.EmailInput(),
         }
 
     def clean(self):
@@ -179,22 +177,23 @@ class LoginUserForm(ModelForm):
 
 class RegisterUserForm(ModelForm):  # forms.Form
     """def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["username"] = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Enter Username'}),
-                                                  max_length=100)
-        self.fields["password"] = forms.CharField(
-            widget=forms.PasswordInput(attrs={'placeholder': 'Enter Password'}),
-            max_length=100)
-        self.fields["email"] = forms.CharField(widget=forms.EmailInput(attrs={'placeholder': 'Enter your email'}),
-                                               max_length=100)"""
+    super().__init__(*args, **kwargs)
+    self.fields["username"] = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Enter Username'}),
+                                              max_length=100)
+    self.fields["password"] = forms.CharField(
+        widget=forms.PasswordInput(attrs={'placeholder': 'Enter Password'}),
+        max_length=100)
+    self.fields["email"] = forms.CharField(widget=forms.EmailInput(attrs={'placeholder': 'Enter your email'}),
+                                           max_length=100)"""
+
     class Meta:
         model = User
         #  fields = ['username', 'password', 'email']
-        exclude = ['is_active']
-        labels = {'user_email': 'Email'}
+        exclude = ["is_active"]
+        labels = {"user_email": "Email"}
         widgets = {
-            'password': forms.PasswordInput(),
-            'user_email': forms.EmailInput(),
+            "password": forms.PasswordInput(),
+            "user_email": forms.EmailInput(),
         }
 
     def clean(self):

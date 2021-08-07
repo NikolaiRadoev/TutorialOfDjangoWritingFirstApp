@@ -3,31 +3,35 @@
 {% block title %} Edit questions {% endblock title%}
 
 {% block content %}
-<h1>Please select question to edit</h1>
+    <h1>Please select question to edit</h1>
     {% if my_questions %}
-<ul>
-    {% for question in my_questions %}
-    <li>
-        <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
-        <a href="{% url 'edit' question.id%}">{{ question.question_text }}</a><!--polls:detail-->
-    </li>
-    {% endfor %}
-</ul>
-{% else %}
-    <p>No questions are available</p>
-    <p>If you want <a href="{% url 'create' 1 %}">create</a> now</p>
-{% endif %}
+        <ul>
+            {% for question in my_questions %}
+            <li>
+                <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
+                <a href="{% url 'edit' question.id %}">{{ question.question_text }}</a><!--polls:detail-->
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No questions are available</p>
+        <p>If you want <a href="{% url 'create' %}">create</a> now</p>
+    {% endif %}
 
-{%if question%}
+    {% if question%}
         <h1>{{question}}</h1>
-    <form action="{% url 'edit' question.id %}" method="post" id="edit">{% csrf_token %}
-    <input type="submit" name="btn_plus" value="Add more choices">
-    <input type="submit" name="btn_minus" value="Remove last choice">
-    {{form.as_ul}}
-        <!--{{ choice_form.management_form }}-->
-    {{choice_form.as_ul}}
+        <form action="{% url 'edit' question.id %}" method="post" id="edit">
+            {% csrf_token %}
 
-    <input type="submit" name="edit" value="Edit">
-</form>
-{% endif %}
+            {{ form.as_ul }}
+            {{ choice_form.management_form }}
+            {{ choice_formset.as_ul }}
+
+            <hr>
+
+            <button type="submit" name="form-TOTAL_FORMS" value="{{next_extra}}">Add Choice</button>
+            <button type="submit" name="form-TOTAL_FORMS" value="{{prev_extra}}">Remove Choice</button>
+            <input type="submit" name="edit" value="Edit">
+        </form>
+    {% endif %}
 {% endblock content %}
