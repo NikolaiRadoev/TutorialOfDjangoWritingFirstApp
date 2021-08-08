@@ -117,6 +117,52 @@ def my_questions(request):
     )
 
 
+def my_questions_for_delete(request):
+    user = get_session_user(request)
+
+    my_questions = list(user.question_set.all())
+    # assert False, my_questions
+    return render(
+        request,
+        "polls/delete.html",
+        {
+            "my_questions": my_questions,
+        },
+    )
+
+
+def delete(request, question_id):
+    user = get_session_user(request)
+
+    question = get_object_or_404(Question, id=question_id)
+
+    try:
+        answer = Answer.objects.filter(user_id=user, question_text=question).get()
+    except Answer.DoesNotExist:
+        answer = None
+
+    if not question.user_id == user.id:
+        raise ValueError("Not your question")
+
+    if request.method == "POST":
+        if request.POST.get("delete"):
+            question.delete()
+            messages.success(request, "Your delete {{question}} Successful")
+            return redirect("home")
+
+    my_questions = list(user.question_set.all())
+
+    return render(
+        request,
+        "polls/delete.html",
+        {
+            "question": question,
+            "answer": answer,
+            "my_questions": my_questions,
+        },
+    )
+
+
 def edit(request, question_id):
     user = get_session_user(request)
 

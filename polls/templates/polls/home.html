@@ -19,6 +19,7 @@
     <a href="{% url 'logout' %}" style="float: right;">Logout</a>
     <a href="{% url 'create' %}">Create new Question</a>
     <a href="{% url 'my_questions' %}">Edit your Questions</a>
+    <a href="{% url 'my_questions_for_delete' %}">Delete your Questions</a>
 
     <p>Available Questions for votes</p>
     {% if open_questions %}

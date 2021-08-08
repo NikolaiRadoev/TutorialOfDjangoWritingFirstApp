@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %} Delete questions {% endblock title%}
+
+{% block content %}
+    <h1>Please select question to delete</h1>
+    {% if my_questions %}
+        <ul>
+            {% for question in my_questions %}
+            <li>
+                <!--<a href="/polls/{{ question.id }}/">{{ question.question_text }}</a>-->
+                <a href="{% url 'delete' question.id %}">{{ question.question_text }}</a><!--polls:detail-->
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No questions are available</p>
+        <p>If you want <a href="{% url 'create' %}">create</a> now</p>
+    {% endif %}
+    {% if question %}
+        {% include "polls/results.html" %}
+        <form action="{% url 'delete' question.id %}" method="post" id="delete">
+            {% csrf_token %}
+            <input type="submit" name="delete" value="Delete">
+        </form>
+    {% endif %}
+{% endblock content %}

@@ -26,6 +26,8 @@ urlpatterns = [
     path("create/new/question/", views.create, name="create"),
     path("edit/questions/<int:question_id>/", views.edit, name="edit"),
     path("edit/questions/", views.my_questions, name="my_questions"),
+    path("delete/questions/", views.my_questions_for_delete, name="my_questions_for_delete"),
+    path("delete/questions/<int:question_id>/", views.delete, name="delete"),
     path("results/question/<int:question_id>/", views.results, name="results"),
     path("logout/", views.logout, name="logout"),
 ]
